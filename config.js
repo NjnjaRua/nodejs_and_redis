@@ -1,28 +1,38 @@
 
 var connectConfig =
 {
-    "user": 
+    "connectionInfo":
     {
-        "http": 
+        "user": 
         {
-            "ip": "127.0.0.1",
-            "port": 8080    
+            "http": 
+            {
+                "ip": "127.0.0.1",
+                "port": 8080    
+            },
+            "webSocket": 
+            {
+                "ip": "127.0.0.1",
+                "port": 8001
+            },
+            "database": 
+            {
+                "ip": "127.0.0.1",
+                "port": 6379
+            }
         },
-        "webSocket": 
+        "admin":
         {
             "ip": "127.0.0.1",
-            "port": 8001
+            "port": 8000
         },
-        "database": 
-        {
-            "ip": "127.0.0.1",
-            "port": 6379
-        }
-    },
-    "admin":
+    },    
+    "paths":
     {
-        "ip": "127.0.0.1",
-        "port": 8000
+        "addUser": "/addUser",
+        "getUser": "/getUser/:userId",
+        "updateUser": "/updateUser/:userId",
+        "deleteUser": "/deleteUser/:userId"
     }
 };
 module.exports = {config: connectConfig};

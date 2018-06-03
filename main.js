@@ -21,26 +21,26 @@
 /***** Config Port */
     //HTTP
     var conUserHttp = express();
-    conUserHttp.listen(config.user.http.port, config.user.http.ip, () =>{
-        console.log("UsessrHTTP listening port " + config.user.http.port);
+    conUserHttp.listen(config.connectionInfo.user.http.port, config.connectionInfo.user.http.ip, () =>{
+        console.log("UsessrHTTP listening port " + config.connectionInfo.user.http.port);
     });
 
     //Web socket
     var conUserWebSocket = require('ws');
-    // var uWSocket = new conUserWebSocket.Server({ port: config.user.webSocket.port});
-    var uWSocket = new conUserWebSocket.Server({host: config.user.webSocket.ip, port: config.user.webSocket.port});
+    // var uWSocket = new conUserWebSocket.Server({ port: config.connectionInfo.user.webSocket.port});
+    var uWSocket = new conUserWebSocket.Server({host: config.connectionInfo.user.webSocket.ip, port: config.connectionInfo.user.webSocket.port});
     uWSocket.on('connection', function connection(ws) {
-        console.log("ConUserWebSocket listening port " + config.user.webSocket.port);
+        console.log("ConUserWebSocket listening port " + config.connectionInfo.user.webSocket.port);
     });
 
     //Admin
     var conAdmin = express();
-    conAdmin.listen(config.admin.port, config.admin.ip, ()=>{
-        console.log("ConAdmin listening port " + config.admin.port);
+    conAdmin.listen(config.connectionInfo.admin.port, config.connectionInfo.admin.ip, ()=>{
+        console.log("ConAdmin listening port " + config.connectionInfo.admin.port);
     });
 
 /* DATABASE */
-    var client = redis.createClient(config.user.database.port, config.user.database.ip);
+    var client = redis.createClient(config.connectionInfo.user.database.port, config.connectionInfo.user.database.ip);
     client.on("error", function (err) {
         console.log(err);
     });
@@ -55,7 +55,7 @@
     conUserHttp.use(jsonParser);
 
     //Add user
-    conUserHttp.put('/user', (req, res) =>
+    conUserHttp.put(config.paths.addUser, (req, res) =>
     {    
         var userName = req.body.userName;
         var score = req.body.score;
@@ -98,7 +98,7 @@
     });
 
     //Get user info
-    conUserHttp.get('/user/:userId', (req, res) =>
+    conUserHttp.get(config.paths.getUser, (req, res) =>
     {
         var userId = parseInt(req.params.userId);
         if(!Number.isInteger(userId))
@@ -130,7 +130,7 @@
     });
 
     //Update User info
-    conUserHttp.post('/user/:userId', (req, res) =>
+    conUserHttp.post(config.paths.updateUser, (req, res) =>
     {
         var userId = parseInt(req.params.userId);
         if(!Number.isInteger(userId))
@@ -180,7 +180,7 @@
     });
 
     //Delete Use
-    conAdmin.delete('/user/:userId', (req, res) =>
+    conAdmin.delete(config.paths.deleteUser, (req, res) =>
     {
          var userId = parseInt(req.params.userId);
         if(!Number.isInteger(userId))
