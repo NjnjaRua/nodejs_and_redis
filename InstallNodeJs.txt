@@ -1,0 +1,56 @@
+- Install nodejs 					=> https://nodejs.org/en/
+- Install Git	 					=> https://git-scm.com/
+- Install GitKraken 				=> https://www.gitkraken.com/
+- Install visual code				=> https://code.visualstudio.com/
+- Install Redis						=> https://github.com/MicrosoftArchive/redis/releases
+- Install Redis desktop manager		=> https://redisdesktop.com/download
+
+- Check installed: cmd -> node --version: bao loi la chua dc cai
+
+https://viblo.asia/p/nodejs-voi-express-framework-rQOvPKVgkYj
+
+*** Tool:
+	- GitKraken : login by github, link folder by bitbucket, and commit and push
+	- node-v8
+	- visual code
+*** Install
+	- https://expressjs.com/
+	
+	
+	- Extention Chrome:
+		+ search and install Restfull -> Rest Web Service Client (chrome-extension://ecjfcmddigpdlehfhdnnnhfgihkmejin/index.html)
+		+ search and install websocket -> Simple websocket Client (chrome-extension://pfdhoblngboilpfeibdedpjgfnlcodoo/index.html)
+	- https://github.com/MicrosoftArchive/redis/releases
+	- https://redisdesktop.com/download
+	
+	- Chưa sử dụng Redis sorted list
+	
+*****TODO
+	- npm install express --save	=> express
+	- npm install ws --save			=> Web socket
+	- npm install body-parser		=> format json
+	- npm install redis		=> Redis
+	
+****	/user/{userId}
+
+	PUT   create new account
+	POST  update data
+	GET   get data
+	DELETE admin delete user
+
+	/user
+	PUT
+	{"userId": 1}
+
+	/user/{userId}
+	POST
+	{"username":"xx","score":100}
+
+	/user/{userId}
+	GET
+	{"username":"xx","score":100,"numUpdate":1000}
+
+	/user/{userId}
+	DELETE
+	{"userId": 1}
+	
