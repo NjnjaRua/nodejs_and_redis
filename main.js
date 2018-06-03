@@ -9,6 +9,15 @@
     var bodyParser = require('body-parser');
     var jsonParser = bodyParser.json();
 
+    //Redis
+    var redis = require("redis");
+
+/* Variables and constants */
+    var userCount = 0;
+    const userHashkey = 'userId:';
+    const userCountKey = "userCount";
+    const leaderboardKey = "leaderBoard";
+
 /***** Config Port */
     //HTTP
     var conUserHttp = express();
@@ -30,6 +39,18 @@
         console.log("ConAdmin listening port " + config.admin.port);
     });
 
+/* DATABASE */
+    var client = redis.createClient(config.user.database.port, config.user.database.ip);
+    client.on("error", function (err) {
+        console.log(err);
+    });
+
+    client.get(userCountKey, function(err, obj)
+    {
+        if(obj != null)
+            userCount = parseInt(obj);
+    });    
+
 /***** USERS ACTION */
     conUserHttp.use(jsonParser);
 
@@ -38,36 +59,149 @@
     {    
         var userName = req.body.userName;
         var score = req.body.score;
-        var numUpdate = req.body.numUpdate;    
+        var numUpdate = req.body.numUpdate;
+        client.get(userCountKey, function(userCountError, userCountValue)
+        {
+            if(userCountError != null)
+            {
+                res.send("Add user is ERROR - detail: " + userCountError);
+            }
+            else
+            {
+                client.hgetall(userHashkey + userCount, function(userHashError, userHashValue)
+                {
+                    if(userHashError == null && userHashValue == null)
+                    {
+                        client.hmset(userHashkey + userCount, {"userName" : userName, "score" : score, "numUpdate" : numUpdate});
 
-        res.send("Add User is success " + userName + " ; " + score + " ; " + numUpdate);
+                        //increase and update userCount key
+                        userCount++;
+                        client.set(userCountKey, userCount, redis.print);
+                        res.send('Add User is SUCCESSFUL');  
+                    }
+                    else
+                    {
+                        res.send('User ' + userCountValue + ' have already been exists'); 
+                    }
+                });
+            }
+        });
     });
 
     //Get user info
     conUserHttp.get('/user/:userId', (req, res) =>
     {
-        var userId = req.params.userId;
-        res.send("Get user info is success " + userId);
+        var userId = parseInt(req.params.userId);
+        if(!Number.isInteger(userId))
+        {
+            res.send("Get user info is ERROR - Type must be Integer");
+        }
+        else
+        {
+            //check user exists
+            client.hgetall(userHashkey + userId, function(err, obj)
+            {
+                if(err != null)
+                {
+                    res.send("Get user info is ERROR - detail: " + err);
+                }
+                else
+                {
+                    if(obj == null)
+                    {
+                        res.send("There isn't any userId=" + userId);
+                    }
+                    else
+                    {
+                        res.send('Get user info is SUCCESSFUL! Info: '  + JSON.stringify(obj));
+                    }
+                }
+            });
+        }
     });
 
     //Update User info
     conUserHttp.post('/user/:userId', (req, res) =>
     {
-        var userId = req.params.userId;
-        var userNameNew = req.body.userName;
-        var scoreNew = req.body.score;
-        var contentRes = "Update user info is success " + userId + " ; " + userNameNew + " ; " + scoreNew;
-        res.send(contentRes);
-        sendWsMsg(contentRes);
+        var userId = parseInt(req.params.userId);
+        if(!Number.isInteger(userId))
+        {
+            res.send("Update user is ERROR - Type must be Integer");
+        }
+        else
+        {
+            var hashKey = userHashkey + userId;
+            //check user exists
+            client.hgetall(hashKey, function(err, obj)
+            {
+                if(obj != null && err == null)
+                {
+                    var userNameNew = req.body.userName;
+                    var scoreNew = req.body.score;
+
+                    //update new data
+                    var numUpdate = obj.numUpdate;
+                    numUpdate++;
+                    obj.numUpdate = numUpdate;
+                    obj.userName = userNameNew;
+                    obj.score = scoreNew;
+                    var newObj = JSON.stringify(obj);
+
+                    client.hmset(hashKey, {"userName" : userNameNew, "score" : scoreNew, "numUpdate" : numUpdate});
+
+                    var args = [leaderboardKey, scoreNew, userId];
+                    client.zadd(args, function (err, response) 
+                    {
+                        if(err != null)
+                        {
+                            res.send("Add " + leaderboardKey + " is ERROR");
+                        }
+                    });
+
+                    //notify for all users
+                    sendWsMsg(newObj);
+                    res.send(newObj);        
+                }
+                else
+                {
+                    res.send("Update user is ERROR - detail: " + err);
+                }
+            });
+        }
     });
 
     //Delete Use
     conAdmin.delete('/user/:userId', (req, res) =>
     {
-        var userId = req.params.userId;
-        res.send("Delete user is success " + userId);
+         var userId = parseInt(req.params.userId);
+        if(!Number.isInteger(userId))
+        {
+            res.send("Delete user is ERROR - Type must be Integer");
+        }
+        else
+        {
+            var hashKey = userHashkey + userId;
+            client.hgetall(hashKey, function(err, obj)
+            {
+                if(err != null)
+                {
+                    res.send("Delete user is ERROR - Detail: " + err);
+                }
+                else
+                {
+                    if(obj == null)
+                    {
+                        res.send("There isn't any userId=" + userId);
+                    }
+                    else
+                    {
+                        client.del(hashKey);
+                        res.send("Delete userId=" + obj + " is SUCCESSFUL");
+                    }
+                }
+            });
+        }
     });
-
 
 /* Notify User */
     function sendWsMsg(content)
@@ -77,3 +211,4 @@
             client.send(content);
         }
     }
+

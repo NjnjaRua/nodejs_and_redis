@@ -12,6 +12,11 @@ var connectConfig =
         {
             "ip": "127.0.0.1",
             "port": 8001
+        },
+        "database": 
+        {
+            "ip": "127.0.0.1",
+            "port": 6379
         }
     },
     "admin":
