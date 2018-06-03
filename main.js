@@ -1,6 +1,13 @@
 /***** Get Config file and Packages */
+    //read config from config.js file
     var {config} = require('./config');
+    
+    //get express
     var express = require('express');
+    
+    //get body-parser: JSON format
+    var bodyParser = require('body-parser');
+    var jsonParser = bodyParser.json();
 
 /***** Config Port */
     //HTTP
@@ -23,26 +30,37 @@
     });
 
 /***** USERS ACTION */
+    conUserHttp.use(jsonParser);
+
     //Add user
     conUserHttp.put('/user', (req, res) =>
     {    
-        res.send("Add User is success");
+        var userName = req.body.userName;
+        var score = req.body.score;
+        var numUpdate = req.body.numUpdate;    
+
+        res.send("Add User is success " + userName + " ; " + score + " ; " + numUpdate);
     });
 
     //Get user info
     conUserHttp.get('/user/:userId', (req, res) =>
     {
-        res.send("Get user info is success");
+        var userId = req.params.userId;
+        res.send("Get user info is success " + userId);
     });
 
     //Update User info
     conUserHttp.post('/user/:userId', (req, res) =>
     {
-        res.send("Update user info is success");
+        var userId = req.params.userId;
+        var userNameNew = req.body.userName;
+        var scoreNew = req.body.score;
+        res.send("Update user info is success " + userId + " ; " + userNameNew + " ; " + scoreNew);
     });
 
     //Delete Use
     conAdmin.delete('/user/:userId', (req, res) =>
     {
-        res.send("Delete user is success");
+        var userId = req.params.userId;
+        res.send("Delete user is success " + userId);
     });
