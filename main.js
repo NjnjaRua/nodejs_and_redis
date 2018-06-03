@@ -13,13 +13,14 @@
     //HTTP
     var conUserHttp = express();
     conUserHttp.listen(config.user.http.port, config.user.http.ip, () =>{
-        console.log("UserHTTP listening port " + config.user.http.port);
+        console.log("UsessrHTTP listening port " + config.user.http.port);
     });
 
     //Web socket
     var conUserWebSocket = require('ws');
-    var wss = new conUserWebSocket.Server({ port: config.user.webSocket.port});
-    wss.on('connection', function connection(ws) {
+    // var uWSocket = new conUserWebSocket.Server({ port: config.user.webSocket.port});
+    var uWSocket = new conUserWebSocket.Server({host: config.user.webSocket.ip, port: config.user.webSocket.port});
+    uWSocket.on('connection', function connection(ws) {
         console.log("ConUserWebSocket listening port " + config.user.webSocket.port);
     });
 
@@ -55,7 +56,9 @@
         var userId = req.params.userId;
         var userNameNew = req.body.userName;
         var scoreNew = req.body.score;
-        res.send("Update user info is success " + userId + " ; " + userNameNew + " ; " + scoreNew);
+        var contentRes = "Update user info is success " + userId + " ; " + userNameNew + " ; " + scoreNew;
+        res.send(contentRes);
+        sendWsMsg(contentRes);
     });
 
     //Delete Use
@@ -64,3 +67,13 @@
         var userId = req.params.userId;
         res.send("Delete user is success " + userId);
     });
+
+
+/* Notify User */
+    function sendWsMsg(content)
+    {
+        for(var client of uWSocket.clients)
+        {
+            client.send(content);
+        }
+    }
