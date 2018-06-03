@@ -75,8 +75,17 @@
                         client.hmset(userHashkey + userCount, {"userName" : userName, "score" : score, "numUpdate" : numUpdate});
 
                         //increase and update userCount key
-                        userCount++;
-                        client.set(userCountKey, userCount, redis.print);
+                        client.incr(userCountKey, function(userCountError, userCountValue)
+                        {
+                            if(userCountError != null)
+                            {
+                                res.send("Increase Key " + userCountKey + " is ERROR - detail: " + userCountError);
+                            }
+                            else if(userCountValue != null)
+                            {
+                                userCount = parseInt(userCountValue);
+                            }
+                        });
                         res.send('Add User is SUCCESSFUL');  
                     }
                     else
