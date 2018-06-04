@@ -40,15 +40,16 @@ https://viblo.asia/p/nodejs-voi-express-framework-rQOvPKVgkYj
 
 	/user
 	PUT
-	{"userId": 1}
+	request body: {"userName":"rua_1","score":"1"}
+
 
 	/user/{userId}
 	POST
-	{"username":"xx","score":100}
+	request body: {"userName":"rua_1","score":"1"}
 
 	/user/{userId}
 	GET
-	{"username":"xx","score":100,"numUpdate":1000}
+	response {"username":"xx","score":100,"numUpdate":1000}
 
 	/user/{userId}
 	DELETE

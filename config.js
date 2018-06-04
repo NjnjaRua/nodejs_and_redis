@@ -29,10 +29,11 @@ var connectConfig =
     },    
     "paths":
     {
-        "addUser": "/addUser",
-        "getUser": "/getUser/:userId",
-        "updateUser": "/updateUser/:userId",
-        "deleteUser": "/deleteUser/:userId"
+        "addUser": "/user",
+        "getUser": "/user/:userId",
+        "updateUser": "/user/:userId",
+        "deleteUser": "/user/:userId",
+        "topUser": "/top/:rank"
     }
 };
 module.exports = {config: connectConfig};
