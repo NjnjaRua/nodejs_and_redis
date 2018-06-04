@@ -1,6 +1,11 @@
 /***** Get Config file and Packages */
-    //read config from config.js file
-    var {config} = require('./config');
+    //read config from other files
+    var {config} = require('./scripts/config');
+    var constMng = require('./scripts/constantManager');
+    var wSocket = require('./scripts/webSocket');
+    
+/* Variables */
+    var userCount = 0;
     
     //get express
     var express = require('express');
@@ -9,15 +14,6 @@
     var bodyParser = require('body-parser');
     var urlParser = bodyParser.urlencoded({ extended: false });
     var jsonParser = bodyParser.json();
-
-    //Redis
-    var redis = require("redis");
-
-/* Variables and constants */
-    var userCount = 0;
-    const userHashkey = 'userId:';
-    const userCountKey = "userCount";
-    const leaderboardKey = "leaderBoard";
 
 /***** Config Port */
     //HTTP
@@ -29,12 +25,7 @@
     conUserHttp.use(jsonParser);
 
     //Web socket
-    var conUserWebSocket = require('ws');
-    // var uWSocket = new conUserWebSocket.Server({ port: config.connectionInfo.user.webSocket.port});
-    var uWSocket = new conUserWebSocket.Server({host: config.connectionInfo.user.webSocket.ip, port: config.connectionInfo.user.webSocket.port});
-    uWSocket.on('connection', function connection(ws) {
-        console.log("ConUserWebSocket listening port " + config.connectionInfo.user.webSocket.port);
-    });
+    wSocket.connect(config.connectionInfo.user.webSocket.ip, config.connectionInfo.user.webSocket.port);    
 
     //Admin
     var conAdmin = express();
@@ -45,26 +36,30 @@
     conAdmin.use(jsonParser);
 
 /* DATABASE */
+    //Redis
+    var redis = require("redis");
+
     var client = redis.createClient(config.connectionInfo.user.database.port, config.connectionInfo.user.database.ip);
     client.on("error", function (err) {
         console.log(err);
     });
 
-    client.get(userCountKey, function(err, obj)
+    client.get(constMng.userCountKey, function(err, obj)
     {
-        if(obj != null)
+        if(obj != null)constMng.userCountKey
             userCount = parseInt(obj);
     });    
 
 /***** USERS ACTION */
-    
-
-    //Add user
+/*
+    user: put, post
+    admin: get, delete, top
+ */
     conUserHttp.put(config.paths.addUser, (req, res) =>
     {    
         var userName = req.body.userName;
         var score = req.body.score;
-        client.get(userCountKey, function(userCountError, userCountValue)
+        client.get(constMng.userCountKey, function(userCountError, userCountValue)
         {
             if(userCountError != null)
             {
@@ -72,18 +67,18 @@
             }
             else
             {
-                client.hgetall(userHashkey + userCount, function(userHashError, userHashValue)
+                client.hgetall(constMng.userHashkey + userCount, function(userHashError, userHashValue)
                 {
                     if(userHashError == null && userHashValue == null)
                     {
-                        client.hmset(userHashkey + userCount, {"userName" : userName, "score" : score, "numUpdate" : 0});
+                        client.hmset(constMng.userHashkey + userCount, {"userName" : userName, "score" : score, "numUpdate" : 0});
 
                         //increase and update userCount key
-                        client.incr(userCountKey, function(userCountError, userCountValue)
+                        client.incr(constMng.userCountKey, function(userCountError, userCountValue)
                         {
                             if(userCountError != null)
                             {
-                                res.send("Increase Key " + userCountKey + " is ERROR - detail: " + userCountError);
+                                res.send("Increase Key " + constMng.userCountKey + " is ERROR - detail: " + userCountError);
                             }
                             else if(userCountValue != null)
                             {
@@ -111,7 +106,7 @@
         }
         else
         {
-            var hashKey = userHashkey + userId;
+            var hashKey = constMng.userHashkey + userId;
             //check user exists
             client.hgetall(hashKey, function(err, obj)
             {
@@ -130,17 +125,17 @@
 
                     client.hmset(hashKey, {"userName" : userNameNew, "score" : scoreNew, "numUpdate" : numUpdate});
 
-                    var args = [leaderboardKey, scoreNew, userId];
+                    var args = [constMng.leaderboardKey, scoreNew, userId];
                     client.zadd(args, function (err, response) 
                     {
                         if(err != null)
                         {
-                            res.send("Add " + leaderboardKey + " is ERROR");
+                            res.send("Add " + constMng.leaderboardKey + " is ERROR");
                         }
                     });
 
                     //notify for all users
-                    sendWsMsg(newObj);
+                    wSocket.sendWsMsg(newObj);
                     res.send(newObj);        
                 }
                 else
@@ -150,7 +145,6 @@
             });
         }
     });
-
     
     //Get Top User
     conAdmin.get(config.paths.topUser, (req, res) =>
@@ -169,7 +163,7 @@
             }
             else
             {
-                client.zrevrange(leaderboardKey, 0, rank, function(err, obj)
+                client.zrevrange(constMng.leaderboardKey, 0, rank, function(err, obj)
                 {
                     if(err != null)
                     {
@@ -193,8 +187,6 @@
     {
         var userId = parseInt(req.params.userId);
         var top = parseInt(req.params.top);
-        console.log("userId= " + userId);
-        console.log("top= " + top);
         if(!Number.isInteger(userId))
         {
             res.send("Get user info is ERROR - Type must be Integer");
@@ -202,7 +194,7 @@
         else
         {
             //check user exists
-            client.hgetall(userHashkey + userId, function(err, obj)
+            client.hgetall(constMng.userHashkey + userId, function(err, obj)
             {
                 if(err != null)
                 {
@@ -233,7 +225,7 @@
         }
         else
         {
-            var hashKey = userHashkey + userId;
+            var hashKey = constMng.userHashkey + userId;
             client.hgetall(hashKey, function(err, obj)
             {
                 if(err != null)
@@ -255,14 +247,4 @@
             });
         }
     });
-
-
-/* Notify User */
-    function sendWsMsg(content)
-    {
-        for(var client of uWSocket.clients)
-        {
-            client.send(content);
-        }
-    }
 
