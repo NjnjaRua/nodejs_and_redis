@@ -39,12 +39,12 @@
     //Redis
     var redis = require("redis");
 
-    var client = redis.createClient(config.connectionInfo.user.database.port, config.connectionInfo.user.database.ip);
-    client.on("error", function (err) {
+    var redisClient = redis.createClient(config.connectionInfo.user.database.port, config.connectionInfo.user.database.ip);
+    redisClient.on("error", function (err) {
         console.log(err);
     });
 
-    client.get(constMng.userCountKey, function(err, obj)
+    redisClient.get(constMng.userCountKey, function(err, obj)
     {
         if(obj != null)constMng.userCountKey
             userCount = parseInt(obj);
@@ -55,11 +55,11 @@
     user: put, post
     admin: get, delete, top
  */
-    conUserHttp.put(config.paths.addUser, (req, res) =>
+    conUserHttp.put(config.connectionInfo.user.http.paths.addUser, (req, res) =>
     {    
         var userName = req.body.userName;
         var score = req.body.score;
-        client.get(constMng.userCountKey, function(userCountError, userCountValue)
+        redisClient.get(constMng.userCountKey, function(userCountError, userCountValue)
         {
             if(userCountError != null)
             {
@@ -67,14 +67,14 @@
             }
             else
             {
-                client.hgetall(constMng.userHashkey + userCount, function(userHashError, userHashValue)
+                redisClient.hgetall(constMng.userHashkey + userCount, function(userHashError, userHashValue)
                 {
                     if(userHashError == null && userHashValue == null)
                     {
-                        client.hmset(constMng.userHashkey + userCount, {"userName" : userName, "score" : score, "numUpdate" : 0});
+                        redisClient.hmset(constMng.userHashkey + userCount, {"userName" : userName, "score" : score, "numUpdate" : 0});
 
                         //increase and update userCount key
-                        client.incr(constMng.userCountKey, function(userCountError, userCountValue)
+                        redisClient.incr(constMng.userCountKey, function(userCountError, userCountValue)
                         {
                             if(userCountError != null)
                             {
@@ -97,7 +97,7 @@
     });
 
     //Update User info
-    conUserHttp.post(config.paths.updateUser, (req, res) =>
+    conUserHttp.post(config.connectionInfo.user.http.paths.updateUser, (req, res) =>
     {
         var userId = parseInt(req.params.userId);
         if(!Number.isInteger(userId))
@@ -108,7 +108,7 @@
         {
             var hashKey = constMng.userHashkey + userId;
             //check user exists
-            client.hgetall(hashKey, function(err, obj)
+            redisClient.hgetall(hashKey, function(err, obj)
             {
                 if(obj != null && err == null)
                 {
@@ -123,10 +123,10 @@
                     obj.score = scoreNew;
                     var newObj = JSON.stringify(obj);
 
-                    client.hmset(hashKey, {"userName" : userNameNew, "score" : scoreNew, "numUpdate" : numUpdate});
+                    redisClient.hmset(hashKey, {"userName" : userNameNew, "score" : scoreNew, "numUpdate" : numUpdate});
 
                     var args = [constMng.leaderboardKey, scoreNew, userId];
-                    client.zadd(args, function (err, response) 
+                    redisClient.zadd(args, function (err, response) 
                     {
                         if(err != null)
                         {
@@ -147,7 +147,7 @@
     });
     
     //Get Top User
-    conAdmin.get(config.paths.topUser, (req, res) =>
+    conAdmin.get(config.connectionInfo.admin.paths.topUser, (req, res) =>
     {
         var rank = parseInt(req.params.rank);
         if(!Number.isInteger(rank))
@@ -163,7 +163,7 @@
             }
             else
             {
-                client.zrevrange(constMng.leaderboardKey, 0, rank, function(err, obj)
+                redisClient.zrevrange(constMng.leaderboardKey, 0, rank, function(err, obj)
                 {
                     if(err != null)
                     {
@@ -183,7 +183,7 @@
     });
 
     //Get user info
-    conAdmin.get(config.paths.getUser, (req, res) =>
+    conAdmin.get(config.connectionInfo.admin.paths.getUser, (req, res) =>
     {
         var userId = parseInt(req.params.userId);
         var top = parseInt(req.params.top);
@@ -194,7 +194,7 @@
         else
         {
             //check user exists
-            client.hgetall(constMng.userHashkey + userId, function(err, obj)
+            redisClient.hgetall(constMng.userHashkey + userId, function(err, obj)
             {
                 if(err != null)
                 {
@@ -216,7 +216,7 @@
     });
 
     //Delete Use
-    conAdmin.delete(config.paths.deleteUser, (req, res) =>
+    conAdmin.delete(config.connectionInfo.admin.paths.deleteUser, (req, res) =>
     {
         var userId = parseInt(req.params.userId);
         if(!Number.isInteger(userId))
@@ -226,7 +226,7 @@
         else
         {
             var hashKey = constMng.userHashkey + userId;
-            client.hgetall(hashKey, function(err, obj)
+            redisClient.hgetall(hashKey, function(err, obj)
             {
                 if(err != null)
                 {
@@ -240,7 +240,7 @@
                     }
                     else
                     {
-                        client.del(hashKey);
+                        redisClient.del(hashKey);
                         res.send("Delete userId=" + obj + " is SUCCESSFUL");
                     }
                 }

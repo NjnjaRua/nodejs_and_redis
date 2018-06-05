@@ -8,7 +8,12 @@ var connectConfig =
             "http": 
             {
                 "ip": "127.0.0.1",
-                "port": 8080    
+                "port": 8080,
+                "paths":
+                {
+                    "addUser": "/user",
+                    "updateUser": "/user/:userId"
+                }    
             },
             "webSocket": 
             {
@@ -24,16 +29,14 @@ var connectConfig =
         "admin":
         {
             "ip": "127.0.0.1",
-            "port": 8000
+            "port": 8000,
+            "paths":
+            {
+                "getUser": "/user/:userId",
+                "deleteUser": "/user/:userId",
+                "topUser": "/top/:rank"
+            }
         },
-    },    
-    "paths":
-    {
-        "addUser": "/user",
-        "getUser": "/user/:userId",
-        "updateUser": "/user/:userId",
-        "deleteUser": "/user/:userId",
-        "topUser": "/top/:rank"
-    }
+    },
 };
 module.exports = {config: connectConfig};
